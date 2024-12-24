@@ -67230,7 +67230,67 @@ class TeknisiAPI extends REST_Controller
 	    echo goResult(true, $data);
 	    return;
 	}
+	public function order_penjualan_viewedit_post(){
+		$id = $this->input->post('code');
 
+		 $teknisi_id = $this->session->userdata('teknisi_id');
+
+	    // Cek teknisi_id dalam session atau dari POST
+	    if (!$teknisi_id) {
+	        $teknisi_id = $this->input->post('teknisi_id');
+	    }
+	    $data['type'] 		= 'update';
+			$data['menu'] 		= 'penawaranbee';
+			
+			//MITRA BISNIS
+			// $data['mitraBisnis'] 	= ApiBee::getMitrabisnisPT();
+			// $data['mitraBisnisUD'] 	= ApiBee::getMitrabisnisUD();
+			
+			// //ITEM
+			// $data['masterItem'] 	= ApiBee::getMasterItemPT();
+			// $data['masterItemUD'] 	= ApiBee::getMasterItemUD();
+			
+			// //HARGA ITEM
+			// // $data['hargaItem'] 		= ApiBee::getHargaItemPT();
+			// // $data['hargaItemUD'] 	= ApiBee::getHargaItemUD();
+			
+			// //GUDANG
+			// $data['gudang'] 		= ApiBee::getGudangPT();
+			// $data['gudangUD'] 		= ApiBee::getGudangUD();
+			  // Ambil data penawaran
+		    $penawaran = PenawaranbeeModel::where('no_transaksi', $id)->first();
+		    if (!$penawaran) {
+		        echo goResult(['error' => 'Penawaran tidak ditemukan'], 404);
+		        return;
+		    }
+
+		    $data['penawaran'] = $penawaran;
+
+		    // Ambil detail penawaran
+		    $details = PenawaranbeedetailModel::where('id_penawaranbee', $penawaran->id)
+		        ->orderBy('id', 'desc') // Pastikan urutan sesuai kebutuhan
+		        ->get();
+
+		     
+
+		    // Validasi detail penawaran
+		    if ($details->isEmpty()) {
+		        $data['detail'] = [];
+		    } else {
+		        $data['detail'] = $details;
+		    }
+
+		    $foto = array();
+		    foreach ($details as $key_detail => $value) {
+		    	$foto[] = $value->code_item;
+		    }
+
+		    $data['customer_new'] = CustomernewModel::where('code',$penawaran->code_mitrabisnis)->get();
+		    $data['sales']         = TeknisiModel::where('id_bee', $penawaran->id_sales)->asc()->first();
+		    $data['foto']			= BarangModel::whereIn('new_kode',$foto)->get();
+		    echo goResult(true,$data);
+		    return;
+	}
 	// public function order_penjualan_edit_post(){
 	// 	$id = $this->input->post('id');
 	// 	 $teknisi_id = $this->session->userdata('teknisi_id');
@@ -74516,7 +74576,38 @@ class TeknisiAPI extends REST_Controller
 		$tgl_akhir = $this->input->get('tgl_akhir');
 		$checkdatevalue = $this->input->get('checkdatevalue') ?? 'unchecked';
 		$invoiceFilter = $this->input->get('invoice') ?? '';
-	
+		$idbarang = $this->input->get('barang') ?? '';
+		$idekspedisi = $this->input->get('ekspedisi') ?? '';
+
+		$invoiceFilterNew = PembelianlclModel::Where('invoice',$invoiceFilter)->get();
+		$barangfilter = PembelianlcldetailModel::Where('id_barang',$idbarang)->get();
+		$ekspedisifilter = PembelianlclekspedisiModel::where('id_ekspedisi',$idekspedisi)->get();
+		// dd(json_encode($invoiceFilterNew));
+
+		$idpembelianlclfilter = [];
+
+		if ($barangfilter->isEmpty() && $ekspedisifilter->isEmpty() && $invoiceFilterNew->isEmpty()) {
+			 	$idpembelianlclfilter = '';
+		}
+		else{
+				foreach ($invoiceFilterNew as $key_invoice => $value_invoice) {
+					$idpembelianlclfilter[] = $value_invoice->id;
+				}
+
+				foreach ($barangfilter as $key_barang => $value) {
+					$idpembelianlclfilter[] = $value->id_pembelianlcl;
+				}
+				foreach ($ekspedisifilter as $key_ekspedisi => $value_ekspedisi) {
+					$idpembelianlclfilter[] = $value_ekspedisi->id_pembelianlcl;
+				}
+				$idpembelianlclfilter = array_unique($idpembelianlclfilter);
+
+				// Jika perlu re-index array setelah array_unique
+				$idpembelianlclfilter = array_values($idpembelianlclfilter);
+		}
+			// dd($idpembelianlclfilter);
+		
+		
 		// status check
 		$request_check = $this->input->get('request_check') ?? 'requested';
 		
@@ -74529,16 +74620,37 @@ class TeknisiAPI extends REST_Controller
 		
 		// Build the query
 		if($status_arr[0]!='all'){
-			$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi','ekspedisilcl','matauang'])->where('invoice', 'like', '%' . $invoiceFilter . '%')
+			if(!empty($idpembelianlclfilter)){
+				$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi','ekspedisilcl','matauang'])
 			
-			->where('status_deleted', '0')
-			->whereIn('status_process', $status_arr)
-			->orderBy('id', 'desc');
+				->whereIn('id',$idpembelianlclfilter)
+				->where('status_deleted', '0')
+				->whereIn('status_process', $status_arr)
+				->orderBy('id', 'desc');	
+			}
+			else{
+				if(!empty($idpembelianlclfilter)){
+					$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi','ekspedisilcl','matauang'])
+					->whereIn('id',$idpembelianlclfilter)
+					->where('status_deleted', '0')
+					->whereIn('status_process', $status_arr)
+					->orderBy('id', 'desc');			
+				}
+				else{
+					$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi','ekspedisilcl','matauang'])
+			
+					->where('status_deleted', '0')
+					->whereIn('status_process', $status_arr)
+					->orderBy('id', 'desc');			
+				}
+				
+			}
 	
 		}
 		else{
-			$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi'])->where('invoice', 'like', '%' . $invoiceFilter . '%')
+			$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi'])
 			
+			->whereIn('id',$idpembelianlclfilter)
 			->where('status_deleted', '0')
 			
 			->orderBy('id', 'desc');
@@ -74548,6 +74660,7 @@ class TeknisiAPI extends REST_Controller
 			$query->whereDate('tgl_transaksi', '>=', $startDate)
 				  ->whereDate('tgl_transaksi', '<=', $lastDate);
 		}
+	
 	
 		$pembelianlcl = $query->get();
 
@@ -74677,6 +74790,15 @@ class TeknisiAPI extends REST_Controller
 			$ekspedisi = EkspedisiModel::whereIn('id',$data_arr)->get();
 			$select_ekspedisi = EkspedisiModel::where('status',1)->orderBy('name','asc')->get();
 			$matauang = MatauangModel::where('status',1)->get();
+			$this->db->select('id, new_kode, name'); // Pastikan kolom yang diambil benar
+			$this->db->from('barang');
+			$this->db->where('status_deleted', '0');
+			$this->db->order_by('new_kode', 'asc');
+
+			$query_barang = $this->db->get(); // Eksekusi query
+
+			$barang = $query_barang->result_array();
+
 			$data = [
 				'pembelianlcl' => $pembelianlcl,
 				'id_commercial_invoice'=>$id_penjualanfromchina,
@@ -74693,6 +74815,9 @@ class TeknisiAPI extends REST_Controller
 				'account'=> $account,
 				'termin'=> $termin,
 				'matauang'=> $matauang,
+				'barang'=> $barang,
+				'id_barang'=>$idbarang,
+				'id_ekspedisi'=>$idekspedisi,
 		
 			];
 			
