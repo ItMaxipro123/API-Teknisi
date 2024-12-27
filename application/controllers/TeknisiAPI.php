@@ -74576,13 +74576,25 @@ class TeknisiAPI extends REST_Controller
 		$tgl_akhir = $this->input->get('tgl_akhir');
 		$checkdatevalue = $this->input->get('checkdatevalue') ?? 'unchecked';
 		$invoiceFilter = $this->input->get('invoice') ?? '';
+		$invoiceFilter = preg_replace('/^inv-/i', '', $invoiceFilter);
+		
 		$idbarang = $this->input->get('barang') ?? '';
 		$idekspedisi = $this->input->get('ekspedisi') ?? '';
 
-		$invoiceFilterNew = PembelianlclModel::Where('invoice',$invoiceFilter)->get();
+		$idinvoice = PenjualanfromchinaModel::Where('invoice_no',$invoiceFilter)->pluck('id');
+		$idinvoice = $idinvoice->isEmpty() ? '' : $idinvoice;
+		$invoiceFilterNew='';
+		
+		if (!is_null($idinvoice)) {
+		    $invoiceFilterNew = PembelianlcldetailModel::where('id_penjualanfromchina', $idinvoice)->get();
+		}
+		
+		
+		
 		$barangfilter = PembelianlcldetailModel::Where('id_barang',$idbarang)->get();
+		
 		$ekspedisifilter = PembelianlclekspedisiModel::where('id_ekspedisi',$idekspedisi)->get();
-		// dd(json_encode($invoiceFilterNew));
+		
 
 		$idpembelianlclfilter = [];
 
@@ -74591,7 +74603,7 @@ class TeknisiAPI extends REST_Controller
 		}
 		else{
 				foreach ($invoiceFilterNew as $key_invoice => $value_invoice) {
-					$idpembelianlclfilter[] = $value_invoice->id;
+					$idpembelianlclfilter[] = $value_invoice->id_pembelianlcl;
 				}
 
 				foreach ($barangfilter as $key_barang => $value) {
