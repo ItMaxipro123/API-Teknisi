@@ -74594,7 +74594,7 @@ class TeknisiAPI extends REST_Controller
 		$barangfilter = PembelianlcldetailModel::Where('id_barang',$idbarang)->get();
 		
 		$ekspedisifilter = PembelianlclekspedisiModel::where('id_ekspedisi',$idekspedisi)->get();
-		
+			
 
 		$idpembelianlclfilter = [];
 
@@ -74871,7 +74871,6 @@ class TeknisiAPI extends REST_Controller
 			        ];
 			    });
 
-				// dd(json_encode($data));
 			
 			if($data['pembelianlcl']){
 				$arrdetaillcl 			= array();
@@ -74916,9 +74915,7 @@ class TeknisiAPI extends REST_Controller
 				$id_ekspedisi_lcl[] = $value->id_ekspedisi;
 			}
 		
-				// $data['nama_ekspedisi'] = EkspedisiModel::whereIn('id', $id_ekspedisi_lcl)
-			 //    ->orderByRaw('FIELD(id, '.implode(',', $id_ekspedisi_lcl).')')
-			 //    ->get();
+			
 			$id_ekspedisi_lcl = array_filter($id_ekspedisi_lcl); // Filter out any empty values
 
 			if (!empty($id_ekspedisi_lcl)) {
@@ -74998,6 +74995,7 @@ class TeknisiAPI extends REST_Controller
 			$data['suppliercommercial'] = $arrsupplier;
 			$data['commercial'] 		= $arrcommercial;
 			$data['matauang_all']		= MatauangModel::where('status',1)->get();
+			$data['masterppn']			= PpnModel::find(1);
 			$penerimaan 		= PenerimaanpembelianModel::where('status', '1')->where('category', 'lcl')->where('id_fcl_lcl', $data['pembelianlcl']->id)->desc()->first();
 			if($penerimaan){
 				$data['statuspenerimaan'] 	= 'true';
