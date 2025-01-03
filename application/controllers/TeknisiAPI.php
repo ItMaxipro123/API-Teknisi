@@ -74579,6 +74579,7 @@ class TeknisiAPI extends REST_Controller
 		$invoiceFilter = preg_replace('/^inv-/i', '', $invoiceFilter);
 		
 		$idbarang = $this->input->get('barang') ?? '';
+
 		$idekspedisi = $this->input->get('ekspedisi') ?? '';
 
 		$idinvoice = PenjualanfromchinaModel::Where('invoice_no',$invoiceFilter)->pluck('id');
@@ -74592,32 +74593,36 @@ class TeknisiAPI extends REST_Controller
 		
 		
 		$barangfilter = PembelianlcldetailModel::Where('id_barang',$idbarang)->get();
-		
+				// dd($barangfilter);
+
 		$ekspedisifilter = PembelianlclekspedisiModel::where('id_ekspedisi',$idekspedisi)->get();
 			
 
 		$idpembelianlclfilter = [];
 
-		if ($barangfilter->isEmpty() && $ekspedisifilter->isEmpty() && $invoiceFilterNew->isEmpty()) {
+		
+			if ($barangfilter->isEmpty() && $ekspedisifilter->isEmpty() && $invoiceFilterNew->isEmpty()) {
+				
 			 	$idpembelianlclfilter = '';
-		}
-		else{
-				foreach ($invoiceFilterNew as $key_invoice => $value_invoice) {
-					$idpembelianlclfilter[] = $value_invoice->id_pembelianlcl;
-				}
+			}
+			else{
+					foreach ($invoiceFilterNew as $key_invoice => $value_invoice) {
+						$idpembelianlclfilter[] = $value_invoice->id_pembelianlcl;
+					}
 
-				foreach ($barangfilter as $key_barang => $value) {
-					$idpembelianlclfilter[] = $value->id_pembelianlcl;
-				}
-				foreach ($ekspedisifilter as $key_ekspedisi => $value_ekspedisi) {
-					$idpembelianlclfilter[] = $value_ekspedisi->id_pembelianlcl;
-				}
-				$idpembelianlclfilter = array_unique($idpembelianlclfilter);
+					foreach ($barangfilter as $key_barang => $value) {
+						$idpembelianlclfilter[] = $value->id_pembelianlcl;
+					}
+					foreach ($ekspedisifilter as $key_ekspedisi => $value_ekspedisi) {
+						$idpembelianlclfilter[] = $value_ekspedisi->id_pembelianlcl;
+					}
+					$idpembelianlclfilter = array_unique($idpembelianlclfilter);
 
-				// Jika perlu re-index array setelah array_unique
-				$idpembelianlclfilter = array_values($idpembelianlclfilter);
-		}
-			// dd($idpembelianlclfilter);
+					// Jika perlu re-index array setelah array_unique
+					$idpembelianlclfilter = array_values($idpembelianlclfilter);
+			}	
+		
+		
 		
 		
 		// status check
@@ -74641,6 +74646,7 @@ class TeknisiAPI extends REST_Controller
 				->orderBy('id', 'desc');	
 			}
 			else{
+
 				if(!empty($idpembelianlclfilter)){
 					$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi','ekspedisilcl','matauang'])
 					->whereIn('id',$idpembelianlclfilter)
@@ -74649,11 +74655,26 @@ class TeknisiAPI extends REST_Controller
 					->orderBy('id', 'desc');			
 				}
 				else{
-					$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi','ekspedisilcl','matauang'])
+					
+					$isBarangFilterEmpty = $barangfilter->isEmpty() && $idbarang != '';
+					$isEkspedisiFilterEmpty = $ekspedisifilter->isEmpty() && $idekspedisi != '';
+					$isInvoiceFilterEmpty = $invoiceFilterNew->isEmpty() && $invoiceFilter != '';
+					if ($isBarangFilterEmpty || $isEkspedisiFilterEmpty || $isInvoiceFilterEmpty) {
+
+						$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi','ekspedisilcl','matauang'])
+						->whereIn('id',$idpembelianlclfilter)
+						->where('status_deleted', '0')
+						->whereIn('status_process', $status_arr)
+						->orderBy('id', 'desc');
+					}
+					else{
+						$query = PembelianlclModel::with(['detail','supplier','cabang','teknisi','ekspedisilcl','matauang'])
 			
-					->where('status_deleted', '0')
-					->whereIn('status_process', $status_arr)
-					->orderBy('id', 'desc');			
+						->where('status_deleted', '0')
+						->whereIn('status_process', $status_arr)
+						->orderBy('id', 'desc');				
+					}
+					
 				}
 				
 			}
