@@ -75799,7 +75799,7 @@ class TeknisiAPI extends REST_Controller
 			$totalRowsPenjualan = $penjualanQuery->count();
 
 			$comercialInvoice = $penjualanQuery->get();
-			$data['importlistlcl'] = $comercialInvoice;
+			$data['importlistfcl'] = $comercialInvoice;
 			$data['rmbtousd'] = RmbtousdModel::find(1);
 			$data['directory_gambar'] = 'https://maxipro.id/images/barang/';
 			echo goResult(true,$data);
@@ -76180,7 +76180,7 @@ class TeknisiAPI extends REST_Controller
 
             $data['type']                   = 'update';
             $data['fclcontainer']           = $penjualan;
-            $data['commercialinvoiceedit']  = PenjualanfromchinaModel::whereIn('id', $idpenjualan)->where('status_deleted', '0')->desc()->get();
+            $data['commercialinvoiceedit']  = PenjualanfromchinaModel::with('supplier','detail')->whereIn('id', $idpenjualan)->where('status_deleted', '0')->desc()->get();
             $data['supplierbank']           = SupplierbankModel::where('id_supplier', $penjualan->id_supplier)->where('status', '1')->asc()->get();
 
             $idpenjualan_detail = array();
@@ -76226,7 +76226,7 @@ class TeknisiAPI extends REST_Controller
 			$totalRowsPenjualan = $penjualanQuery->count();
 
 			$comercialInvoice = $penjualanQuery->get();
-			$data['importlistlcl'] = $comercialInvoice;
+			$data['importlistfcl'] = $comercialInvoice;
 
             echo goResult(true,$data);
             return;
