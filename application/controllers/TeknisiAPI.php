@@ -81137,7 +81137,7 @@ class TeknisiAPI extends REST_Controller
 
 
 
-				$product     = BarangModel::whereNull('id')->where('status_deleted', '0')->orderBy('name', 'asc')->get();
+				$product     = BarangModel::whereNull('id')->where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
 
 			} elseif (in_array('allproduk', $id)) {
 
@@ -81147,7 +81147,7 @@ class TeknisiAPI extends REST_Controller
 
 
 
-				$product = BarangModel::where('status_deleted', '0')->orderBy('name', 'asc')->get();
+				$product = BarangModel::where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
 
 			} else {
 
@@ -81157,7 +81157,7 @@ class TeknisiAPI extends REST_Controller
 
 
 
-				$product    = BarangModel::whereIn('id', $id)->where('status_deleted', '0')->orderBy('name', 'asc')->get();
+				$product    = BarangModel::whereIn('id', $id)->where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
 
 			}
 
@@ -81173,7 +81173,7 @@ class TeknisiAPI extends REST_Controller
 
 
 
-				$product     = BarangModel::whereNull('id')->where('status_deleted', '0')->orderBy('name', 'asc')->get();
+				$product     = BarangModel::whereNull('id')->where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
 
 			}  else {
 
@@ -81183,7 +81183,7 @@ class TeknisiAPI extends REST_Controller
 
 
 
-				$product     = BarangModel::where('id_category', $category)->where('status_deleted', '0')->orderBy('name', 'asc')->get();
+				$product     = BarangModel::where('id_category', $category)->where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
 
 			}
 
@@ -81226,7 +81226,7 @@ class TeknisiAPI extends REST_Controller
 								// );
 								$idProduct = $value->id;
 			                    $name = $value->name;
-
+			                    $code = $value->new_kode;
 			                    // Cek apakah idproduct sudah ada di $arrayStokPT
 			                    if (isset($arrayStokPT[$idProduct])) {
 			                        // Jika sudah ada, tambahkan stok_gudang
@@ -81237,7 +81237,8 @@ class TeknisiAPI extends REST_Controller
 			                            'idproduct'   => $idProduct,
 			                            'name'        => $name,
 			                            'name_gudang' => $valueGudangPT->name,
-			                            'stok_gudang' => $valueStokPT->qty
+			                            'stok_gudang' => $valueStokPT->qty,
+			                            'kode'		  => $code
 			                        );
 			                    }
 
@@ -81252,6 +81253,7 @@ class TeknisiAPI extends REST_Controller
 			}
 
 		foreach ($product as $key => $value) {
+			
 		    // Ambil semua idproduct yang sudah ada di $arrayStokPT
 		    $existingIds = array_column($arrayStokPT, 'idproduct');
 		    
@@ -81260,13 +81262,13 @@ class TeknisiAPI extends REST_Controller
 		        $arrayStokPT[] = array(
 		            'idproduct'    => $value->id,
 		            'name'         => $value->name,
-		            
+		            'kode'		   => $value->new_kode,
 		            'stok_gudang'  => 0
 		        );
 		    }
 		}
 		usort($arrayStokPT, function ($a, $b) {
-		    return strcmp($a['name'], $b['name']);
+		    return strcmp($a['kode'], $b['kode']);
 		});
 		
 
@@ -81294,8 +81296,8 @@ class TeknisiAPI extends REST_Controller
 									'idproduct'     => $value->id,
 									'name'          => $value->name,
 									'name_gudang'   => $valueGudangUD->name,
-									'stok_gudang'   => number_format($valueStokUD->qty)
-
+									'stok_gudang'   => number_format($valueStokUD->qty),
+									'kode'			=> $value->new_kode
 								);
 
 							}
@@ -81327,7 +81329,226 @@ class TeknisiAPI extends REST_Controller
 
 	}
 
+	public function new_cek_produk_stok_get()
+	{
+		$id                 = 'allproduk';
 
+
+		$category           = '1';
+
+
+
+
+
+
+
+		if ($category == 'all') {
+
+
+
+
+
+
+
+			if (!$id) {
+
+
+
+
+
+
+
+				$product     = BarangModel::whereNull('id')->where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
+
+			} elseif (in_array('allproduk', $id)) {
+
+
+
+
+
+
+
+				$product = BarangModel::where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
+
+			} else {
+
+
+
+
+
+
+
+				$product    = BarangModel::whereIn('id', $id)->where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
+
+			}
+
+		} else {
+			
+
+
+			if (!$id) {
+
+
+
+
+
+
+
+				$product     = BarangModel::whereNull('id')->where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
+
+			}  else {
+
+
+
+
+
+
+
+				$product     = BarangModel::where('id_category', $category)->where('status_deleted', '0')->orderBy('new_kode', 'asc')->get();
+
+			}
+
+		}
+
+		//PT
+		$masterItemPT       = ApiBee::getMasterItemPT();
+		$forStokPT          = ApiBee::getStokPT();
+		$forGudangPT        = ApiBee::getGudangPT();
+		$arrayIdPT          = array();
+		$arrayStokPT        = array();
+
+
+			foreach ($forStokPT['data'] as $valueStokPT) {
+
+
+				foreach ($product as $key => $value) {
+
+					if ($valueStokPT->itemid == $value->new_kode) {
+
+						foreach ($forGudangPT['data'] as $valueGudangPT) {
+
+
+							if ($valueGudangPT->id == $valueStokPT->wh_id) {
+
+
+								// $arrayIdPT[]        = $value->id;
+
+
+								// $arrayStokPT[]      = array(
+
+								// 	'idproduct'     => $value->id,
+
+								// 	'name'          => $value->name,
+
+								// 	'name_gudang'   => $valueGudangPT->name,
+
+								// 	'stok_gudang'   => number_format($valueStokPT->qty)
+
+								// );
+								$idProduct = $value->id;
+			                    $name = $value->name;
+			                    $code = $value->new_kode;
+			                    // Cek apakah idproduct sudah ada di $arrayStokPT
+			                    if (isset($arrayStokPT[$idProduct])) {
+			                        // Jika sudah ada, tambahkan stok_gudang
+			                        $arrayStokPT[$idProduct]['stok_gudang'] += $valueStokPT->qty;
+			                    } else {
+			                        // Jika belum ada, tambahkan data baru
+			                        $arrayStokPT[$idProduct] = array(
+			                            'idproduct'   => $idProduct,
+			                            'name'        => $name,
+			                            'name_gudang' => $valueGudangPT->name,
+			                            'stok_gudang' => $valueStokPT->qty,
+			                            'kode'		  => $code
+			                        );
+			                    }
+
+							}
+
+						}
+
+					} 
+
+				}
+
+			}
+
+		foreach ($product as $key => $value) {
+			
+		    // Ambil semua idproduct yang sudah ada di $arrayStokPT
+		    $existingIds = array_column($arrayStokPT, 'idproduct');
+		    
+		    // Cek apakah id dari $value sudah ada di $existingIds
+		    if (!in_array($value->id, $existingIds)) {
+		        $arrayStokPT[] = array(
+		            'idproduct'    => $value->id,
+		            'name'         => $value->name,
+		            'kode'		   => $value->new_kode,
+		            'stok_gudang'  => 0
+		        );
+		    }
+		}
+		usort($arrayStokPT, function ($a, $b) {
+		    return strcmp($a['kode'], $b['kode']);
+		});
+		
+
+		//UD
+
+		$formasterItemUD    = ApiBee::getMasterItemUD();
+		$forStokUD          = ApiBee::getStokUD();
+		$forGudangUD        = ApiBee::getGudangUD();
+		$arrayIdUD          = array();
+		$arrayStokUD        = array();
+			foreach ($forStokUD['data'] as $valueStokUD) {
+
+				foreach ($product as $key => $value) {
+
+					if ($valueStokUD->itemid == $value->new_kode) {
+
+						foreach ($forGudangUD['data'] as $valueGudangUD) {
+
+							if ($valueGudangUD->id == $valueStokUD->wh_id) {
+
+								$arrayIdUD[]        = $value->id;
+
+								$arrayStokUD[]      = array(
+
+									'idproduct'     => $value->id,
+									'name'          => $value->name,
+									'name_gudang'   => $valueGudangUD->name,
+									'stok_gudang'   => number_format($valueStokUD->qty),
+									'kode'			=> $value->new_kode
+								);
+
+							}
+
+						}
+
+					} else {
+
+					}
+
+				}
+
+			}
+
+		$data['auth']           = true;
+		$data['msg']            = 'success';
+
+		$data['stokproduct']    = $arrayStokPT;
+
+		// $data['stokproductUD']  = $arrayStokUD;
+
+		$data['countStokPT']    = count($arrayStokPT);
+
+
+		$data['countStokUD']    = count($arrayStokUD);
+
+
+		echo json_encode($data);
+
+	}
 
 
 
